@@ -1,7 +1,7 @@
 ZSH_NVM_DIR=${0:a:h}
 
 [[ -z "$NVM_DIR" ]] && export NVM_DIR="$HOME/.nvm"
-[[ -z "$NVM_CACHE_LOAD_DIR" ]] && export NVM_CACHE_LOAD_DIR="${HOME}/.zsh_nvm_cache"
+[[ -z "$NVM_CACHE_LOAD_DIR" ]] && export NVM_CACHE_LOAD_PATH="${HOME}/.zsh_nvm_cache"
 
 _zsh_nvm_rename_function() {
   test -n "$(declare -f $1)" || return
@@ -51,7 +51,7 @@ _zsh_nvm_load() {
     source "$NVM_DIR/nvm.sh"
     if [[ "$NVM_CACHE_LOAD" == true ]]; then
       export NVM_CACHE_LOAD_PATH_NVM="$(awk -F ':' '{ print $1 }' <<< "$PATH")"
-      echo "$NVM_CACHE_LOAD_PATH_NVM" > "$NVM_CACHE_LOAD_DIR"
+      echo "$NVM_CACHE_LOAD_PATH_NVM" > "$NVM_CACHE_LOAD_PATH"
     fi
   fi
 
@@ -94,8 +94,8 @@ _zsh_nvm_completion() {
 }
 
 _zsh_nvm_lazy_load() {
-  if [[ "$NVM_CACHE_LOAD" == true ]] && [[ -s "$NVM_CACHE_LOAD_DIR" ]]; then
-    export NVM_CACHE_LOAD_PATH_NVM="$(cat "$NVM_CACHE_LOAD_DIR")"
+  if [[ "$NVM_CACHE_LOAD" == true ]] && [[ -s "$NVM_CACHE_LOAD_PATH" ]]; then
+    export NVM_CACHE_LOAD_PATH_NVM="$(cat "$NVM_CACHE_LOAD_PATH")"
 
     # Add it to path if it doesn't already exist.
     if [ -d "$NVM_CACHE_LOAD_PATH_NVM" ] && [[ ":$PATH:" != *":$NVM_CACHE_LOAD_PATH_NVM:"* ]]; then
