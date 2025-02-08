@@ -1,7 +1,7 @@
 ZSH_NVM_DIR=${0:a:h}
 
 [[ -z "$NVM_DIR" ]] && export NVM_DIR="$HOME/.nvm"
-[[ -z "$NVM_CACHE_LOAD_DIR" ]] && export NVM_CACHE_LOAD_PATH="${HOME}/.zsh_nvm_cache"
+[[ -z "$NVM_CACHE_LOAD_PATH" ]] && export NVM_CACHE_LOAD_PATH="${HOME}/.zsh_nvm_cache"
 
 _zsh_nvm_rename_function() {
   test -n "$(declare -f $1)" || return
