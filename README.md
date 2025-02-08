@@ -112,10 +112,24 @@ Performance comparison:
 ( _zsh_nvm_lazy_load; )  0.01s user 0.01s system 168% cpu 0.012 total
 ```
 
+#### Cache path with lazy loading
+
+```shell
+export NVM_CACHE_LOAD=true
+```
+
+Cache the most recently used NVM path and preload it into $PATH.
+
+Useful for scripts that have `#!/usr/bin/env node` to be able to run without
+having to run `node` forehand.
+
+Optionally, you can specify where cached path is located using `NVM_CACHE_LOAD_DIR`.
+
 #### Extra commands to trigger lazy loading
+
 By default lazy loading nvm is triggered by running the `nvm`, `node`, `npm` commands or any installed npm global binaries.
 If you want to trigger the lazy loading via extra arbitrary commands you can define `NVM_LAZY_LOAD_EXTRA_COMMANDS` and set it to an array of commands as strings.
-This can be usefull if programs are not in the above list of binaries but do depend on the availability of `node`, e.g. a vim plugin.
+This can be useful if programs are not in the above list of binaries but do depend on the availability of `node`, e.g. a vim plugin.
 
 ```shell
 export NVM_LAZY_LOAD_EXTRA_COMMANDS=('vim')
