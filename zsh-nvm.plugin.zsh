@@ -1,6 +1,7 @@
 ZSH_NVM_DIR=${0:a:h}
 
 [[ -z "$NVM_DIR" ]] && export NVM_DIR="$HOME/.nvm"
+[[ -z "$NVM_CACHE_LOAD_DIR" ]] && export NVM_CACHE_LOAD_DIR="${HOME}/.zsh_nvm_cache"
 
 _zsh_nvm_rename_function() {
   test -n "$(declare -f $1)" || return
@@ -25,11 +26,11 @@ _zsh_nvm_install() {
 _zsh_nvm_global_binaries() {
 
   # Look for global binaries
-  local global_binary_paths="$(echo "$NVM_DIR"/v0*/bin/*(N) "$NVM_DIR"/versions/*/*/bin/*(N))"
+  local global_binary_paths=($(echo "$NVM_DIR"/v0*/bin/*(N) "$NVM_DIR"/versions/*/*/bin/*(N)))
 
   # If we have some, format them
   if [[ -n "$global_binary_paths" ]]; then
-    echo "$NVM_DIR"/v0*/bin/*(N) "$NVM_DIR"/versions/*/*/bin/*(N) |
+    echo ${(F)global_binary_paths} |
       xargs -n 1 basename |
       sort |
       uniq
@@ -38,11 +39,20 @@ _zsh_nvm_global_binaries() {
 
 _zsh_nvm_load() {
 
+  if [[ "$NVM_CACHE_LOAD" == true ]]; then
+      # Strip out the old cached version of node that we were using.
+      export PATH="$(sed -e 's|[^:]*versions/node[^:]*[:]||g' <<< "$PATH")"
+  fi
+
   # Source nvm (check if `nvm use` should be ran after load)
   if [[ "$NVM_NO_USE" == true ]]; then
     source "$NVM_DIR/nvm.sh" --no-use
   else
     source "$NVM_DIR/nvm.sh"
+    if [[ "$NVM_CACHE_LOAD" == true ]]; then
+      export NVM_CACHE_LOAD_PATH_NVM="$(awk -F ':' '{ print $1 }' <<< "$PATH")"
+      echo "$NVM_CACHE_LOAD_PATH_NVM" > "$NVM_CACHE_LOAD_DIR"
+    fi
   fi
 
   # Rename main nvm function
@@ -74,10 +84,24 @@ _zsh_nvm_load() {
 _zsh_nvm_completion() {
 
   # Add provided nvm completion
-  [[ -r $NVM_DIR/bash_completion ]] && source $NVM_DIR/bash_completion
+  # default
+  if [[ -f "$NVM_DIR/bash_completion" ]]; then
+    source "$NVM_DIR/bash_completion"
+  # homebrew
+  elif _zsh_nvm_has brew && [[ -f "$(brew --prefix nvm)/etc/bash_completion.d/nvm" ]]; then
+    source "$(brew --prefix nvm)/etc/bash_completion.d/nvm"
+  fi
 }
 
 _zsh_nvm_lazy_load() {
+  if [[ "$NVM_CACHE_LOAD" == true ]] && [[ -s "$NVM_CACHE_LOAD_DIR" ]]; then
+    export NVM_CACHE_LOAD_PATH_NVM="$(cat "$NVM_CACHE_LOAD_DIR")"
+
+    # Add it to path if it doesn't already exist.
+    if [ -d "$NVM_CACHE_LOAD_PATH_NVM" ] && [[ ":$PATH:" != *":$NVM_CACHE_LOAD_PATH_NVM:"* ]]; then
+      export PATH="${NVM_CACHE_LOAD_PATH_NVM}${PATH:+":$PATH"}"
+    fi
+  fi
 
   # Get all global node module binaries including node
   # (only if NVM_NO_USE is off)
@@ -111,6 +135,7 @@ _zsh_nvm_lazy_load() {
     eval "$cmd(){
       unset -f $cmds > /dev/null 2>&1
       _zsh_nvm_load
+      [[ \"$NVM_AUTO_USE\" == true ]] && _zsh_nvm_auto_use
       $cmd \"\$@\"
     }"
   done
@@ -176,11 +201,19 @@ _zsh_nvm_auto_use() {
     if [[ "$nvmrc_node_version" = "N/A" ]]; then
       nvm install && export NVM_AUTO_USE_ACTIVE=true
     elif [[ "$nvmrc_node_version" != "$node_version" ]]; then
-      nvm use && export NVM_AUTO_USE_ACTIVE=true
+      if [[ "$NVM_SILENT" == true ]]; then
+        nvm use --silent && export NVM_AUTO_USE_ACTIVE=true
+      else
+        nvm use && export NVM_AUTO_USE_ACTIVE=true
+      fi
     fi
   elif [[ "$node_version" != "$(nvm version default)" ]] && [[ "$NVM_AUTO_USE_ACTIVE" = true ]]; then
-    echo "Reverting to nvm default version"
-    nvm use default
+    if [[ "$NVM_SILENT" == true ]]; then
+      nvm use default --silent
+    else
+      echo "Reverting to nvm default version"
+      nvm use default
+    fi
   fi
 }
 
@@ -218,7 +251,7 @@ if [[ "$ZSH_NVM_NO_LOAD" != true ]]; then
 
     # Enable completion
     [[ "$NVM_COMPLETION" == true ]] && _zsh_nvm_completion
-    
+
     # Auto use nvm on chpwd
     [[ "$NVM_AUTO_USE" == true ]] && add-zsh-hook chpwd _zsh_nvm_auto_use && _zsh_nvm_auto_use
   fi
