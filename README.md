@@ -123,7 +123,7 @@ Cache the most recently used NVM path and preload it into $PATH.
 Useful for scripts that have `#!/usr/bin/env node` to be able to run without
 having to run `node` forehand.
 
-Optionally, you can specify where cached path is located using `NVM_CACHE_LOAD_DIR`.
+Optionally, you can specify where cached path is located using `NVM_CACHE_LOAD_PATH`.
 
 #### Extra commands to trigger lazy loading
 
